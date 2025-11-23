@@ -36,14 +36,11 @@ def calculate_var_es_copula(returns_df, portfolio_df, alpha=0.05, n_simulations=
         returns = returns_df[stock].values
         U[:, i] = fitted_dists[stock].cdf(returns)
 
-    # Transform uniform to standard normal
-    Z = stats.norm.ppf(U)
-
-    # Calculate Spearman correlation of Z
+    # Calculate Spearman correlation of U values directly
     spearman_corr = np.eye(n_stocks)
     for i in range(n_stocks):
         for j in range(i+1, n_stocks):
-            corr, _ = spearmanr(Z[:, i], Z[:, j])
+            corr, _ = spearmanr(U[:, i], U[:, j])
             spearman_corr[i, j] = corr
             spearman_corr[j, i] = corr
 

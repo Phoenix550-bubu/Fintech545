@@ -41,27 +41,35 @@ def gaussian_copula_simulation(returns_df, fitted_params, n_simulations=100000, 
     stocks = list(fitted_params.keys())
     n_stocks = len(stocks)
 
+    # Transform returns to uniform [0,1] using CDF of fitted distributions
     U = np.zeros((len(returns_df), n_stocks))
     for i, stock in enumerate(stocks):
         returns = returns_df[stock].values
         nu, mu, sigma = fitted_params[stock]
         U[:, i] = stats.t.cdf(returns, df=nu, loc=mu, scale=sigma)
 
-    Z = stats.norm.ppf(U)
+    # Calculate Spearman correlation of U values directly
+    spearman_corr = np.eye(n_stocks)
+    for i in range(n_stocks):
+        for j in range(i+1, n_stocks):
+            corr, _ = spearmanr(U[:, i], U[:, j])
+            spearman_corr[i, j] = corr
+            spearman_corr[j, i] = corr
 
-    corr_matrix = np.corrcoef(Z.T)
-
+    # Simulate from multivariate normal with Spearman correlation
     mean_vec = np.zeros(n_stocks)
-    simulated_Z = np.random.multivariate_normal(mean_vec, corr_matrix, size=n_simulations)
+    simulated_Z = np.random.multivariate_normal(mean_vec, spearman_corr, size=n_simulations)
 
+    # Transform simulated Z to uniform using normal CDF
     simulated_U = stats.norm.cdf(simulated_Z)
 
+    # Transform uniform to returns using inverse CDF (quantile function)
     simulated_returns = np.zeros((n_simulations, n_stocks))
     for i, stock in enumerate(stocks):
         nu, mu, sigma = fitted_params[stock]
         simulated_returns[:, i] = stats.t.ppf(simulated_U[:, i], df=nu, loc=mu, scale=sigma)
 
-    return simulated_returns, corr_matrix
+    return simulated_returns, spearman_corr
 
 
 def calculate_var_es_portfolio(simulated_returns, current_prices, holdings, stocks, alpha=0.05):
