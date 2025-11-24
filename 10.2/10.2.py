@@ -53,7 +53,7 @@ def main():
     covar_df = pd.read_csv('test5_2.csv')
     covar = covar_df.values
 
-    risk_budget = np.array([1.4044417, 1.4044417, 1.0, 1.0, 0.5])
+    risk_budget = np.array([1.0, 1.0, 1.0, 1.0, 0.5])
 
     weights = risk_parity_with_budget(covar, risk_budget)
 
